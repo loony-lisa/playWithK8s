@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mariadb-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mariadb-init-sql
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS beverage;
+    USE beverage;
+    CREATE TABLE drinks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(255) NOT NULL
+    );
+    INSERT INTO drinks (name, type) VALUES
+    ('Coffee', 'Hot Drink'),
+    ('Orange Juice', 'Juice'),
+    ('Milk', 'Dairy');
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:latest
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "mysecret"
+        volumeMounts:
+        - name: mariadb-init-sql
+          mountPath: /docker-entrypoint-initdb.d/
+      volumes:
+      - name: mariadb-init-sql
+        configMap:
+          name: mariadb-init-sql
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-server
+  labels:
+    app: my-server
+spec:
+  containers:
+  - name: my-sever
+    image: localhost:5000/my-server:latest
+    ports:
+    - containerPort: 3000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-end
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: front-end
+  template:
+    metadata:
+      labels:
+        app: front-end
+    spec:
+      containers:
+      - name: nginx
+        image: localhost:5000/front-end:latest
+        ports:
+        - containerPort: 8080

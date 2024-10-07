@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drinks</title>
+</head>
+<body>
+  <div id="drinkInfo"></div>
+
+  <script>
+    // Use fetch API get data
+    fetch('/api/drink')
+      .then(response => response.json())
+      .then(data => {
+        // Display data
+        const drinkInfoDiv = document.getElementById('drinkInfo');
+        data.forEach(drink => {
+          const listItem = document.createElement('li');
+          listItem.innerHTML = `
+            <h3>${drink.name}</h3>
+            <p>type: ${drink.type}</p>
+          `;
+          drinkInfoDiv.appendChild(listItem);
+        });
+      })
+      .catch(error => {
+        console.error('获取数据失败:', error);
+      });
+  </script>
+</body>
+</html>
